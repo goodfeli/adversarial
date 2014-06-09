@@ -1,0 +1,174 @@
+!obj:pylearn2.train.Train {
+    dataset: &train !obj:pylearn2.datasets.cifar10.CIFAR10 {
+        axes: ['c', 0, 1, 'b'],
+        gcn: 55.,
+        which_set: 'train',
+        start: 0,
+        stop: 40000
+    },
+    model: !obj:adversarial.AdversaryPair {
+        generator: !obj:adversarial.Generator {
+            mlp: !obj:pylearn2.models.mlp.MLP {
+            layers: [
+                     !obj:pylearn2.models.mlp.RectifiedLinear {
+                         layer_name: 'gh0',
+                         dim: 8000,
+                         irange: .05,
+                         #max_col_norm: 1.9365,
+                     },
+                     !obj:pylearn2.models.mlp.Sigmoid {
+                         layer_name: 'h1',
+                         dim: 8000,
+                         irange: .05,
+                         #max_col_norm: 1.9365,
+                     },
+                     !obj:pylearn2.models.mlp.SpaceConverter {
+                         layer_name: 'converter',
+                         output_space: !obj:pylearn2.space.Conv2DSpace {
+                        shape: [10, 10],
+                        num_channels: 80,
+                        axes: ['c', 0, 1, 'b'],
+                    }},
+                     !obj:adversarial.deconv.Deconv {
+                     #W_lr_scale: .05,
+                     #b_lr_scale: .05,
+                         num_channels: 3,
+                         output_stride: [3, 3],
+                         kernel_shape: [5, 5],
+                         pad_out: 0,
+                         #max_kernel_norm: 1.9365,
+                         # init_bias: !obj:pylearn2.models.dbm.init_sigmoid_bias_from_marginals { dataset: *train},
+                         layer_name: 'y',
+                         irange: .05,
+                         tied_b: 0
+                     },
+                    ],
+            nvis: 100,
+        }},
+        discriminator: 
+            !obj:pylearn2.models.mlp.MLP {
+            layers: [
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     layer_name: 'dh0',
+                     pad: 4,
+                     tied_b: 1,
+                     #W_lr_scale: .05,
+                     #b_lr_scale: .05,
+                     num_channels: 32,
+                     num_pieces: 2,
+                     kernel_shape: [8, 8],
+                     pool_shape: [4, 4],
+                     pool_stride: [2, 2],
+                     irange: .005,
+                     #max_kernel_norm: .9,
+                     partial_sum: 33,
+                 },
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     layer_name: 'h1',
+                     pad: 3,
+                     tied_b: 1,
+                     #W_lr_scale: .05,
+                     #b_lr_scale: .05,
+                     num_channels: 32, # 192 ran out of memory
+                     num_pieces: 2,
+                     kernel_shape: [8, 8],
+                     pool_shape: [4, 4],
+                     pool_stride: [2, 2],
+                     irange: .005,
+                     #max_kernel_norm: 1.9365,
+                     partial_sum: 15,
+                 },
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     pad: 3,
+                     layer_name: 'h2',
+                     tied_b: 1,
+                     #W_lr_scale: .05,
+                     #b_lr_scale: .05,
+                     num_channels: 192,
+                     num_pieces: 2,
+                     kernel_shape: [5, 5],
+                     pool_shape: [2, 2],
+                     pool_stride: [2, 2],
+                     irange: .005,
+                     #max_kernel_norm: 1.9365,
+                 },
+                 !obj:pylearn2.models.maxout.Maxout {
+                    layer_name: 'h3',
+                    irange: .005,
+                    num_units: 500,
+                    num_pieces: 5,
+                    #max_col_norm: 1.9
+                     },
+                     !obj:pylearn2.models.mlp.Sigmoid {
+                         #W_lr_scale: .1,
+                         #b_lr_scale: .1,
+                         #max_col_norm: 1.9365,
+                         layer_name: 'y',
+                         dim: 1,
+                         irange: .005
+                     }
+                    ],
+        input_space: !obj:pylearn2.space.Conv2DSpace {
+            shape: [32, 32],
+            num_channels: 3,
+            axes: ['c', 0, 1, 'b'],
+        }
+        },
+    },
+    algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
+        batch_size: 128,
+        learning_rate: .004,
+        learning_rule: !obj:pylearn2.training_algorithms.learning_rule.Momentum {
+            init_momentum: .5,
+        },
+        monitoring_dataset:
+            {
+                #'train' : *train,
+                'valid' : !obj:pylearn2.datasets.cifar10.CIFAR10 {
+                            axes: ['c', 0, 1, 'b'],
+                              gcn: 55., 
+                              which_set: 'train',
+                              start: 40000,
+                              stop:  50000
+                          },
+                #'test'  : !obj:pylearn2.datasets.cifar10.CIFAR10 {
+                #              which_set: 'test',
+                #              gcn: 55.,
+                #          }
+            },
+        cost: !obj:adversarial.AdversaryCost2 {
+            scale_grads: 0,
+            #target_scale: .1,
+            discriminator_default_input_include_prob: .5,
+            discriminator_input_include_probs: {
+                'dh0': .8
+            },
+            discriminator_default_input_scale: 2.,
+            discriminator_input_scales: {
+                'dh0': 1.25   
+            }
+            },
+        #termination_criterion: !obj:pylearn2.termination_criteria.MonitorBased {
+        #    channel_name: "valid_y_misclass",
+        #    prop_decrease: 0.,
+        #    N: 100
+        #},
+        update_callbacks: !obj:pylearn2.training_algorithms.sgd.ExponentialDecay {
+            decay_factor: 1.000004,
+            min_lr: .000001
+        }
+    },
+    extensions: [
+        #!obj:pylearn2.train_extensions.best_params.MonitorBasedSaveBest {
+        #     channel_name: 'valid_y_misclass',
+        #     save_path: "${PYLEARN2_TRAIN_FILE_FULL_STEM}_best.pkl"
+        #},
+        !obj:pylearn2.training_algorithms.learning_rule.MomentumAdjustor {
+            start: 1,
+            saturate: 250,
+            final_momentum: .7
+        }
+    ],
+    save_path: "${PYLEARN2_TRAIN_FILE_FULL_STEM}.pkl",
+    save_freq: 1
+}

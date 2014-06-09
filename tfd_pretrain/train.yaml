@@ -1,0 +1,112 @@
+!obj:pylearn2.train.Train {
+    dataset: &train !obj:pylearn2.datasets.tfd.TFD {
+        which_set: 'unlabeled',
+        scale: True,
+    },
+    model: !obj:adversarial.AdversaryPair {
+        generator: !obj:adversarial.Generator {
+            monitor_ll: 1,
+            mlp: !obj:adversarial.add_layers {
+                mlp: !obj:pylearn2.models.mlp.MLP {
+                    layers: [
+                     !obj:pylearn2.models.mlp.RectifiedLinear {
+                         layer_name: 'h0',
+                         dim: 8000,
+                         irange: .05,
+                         max_col_norm: 1.9365,
+                     },
+                     !obj:pylearn2.models.mlp.Sigmoid {
+                         layer_name: 'h1',
+                         dim: 100,
+                         irange: .05,
+                         max_col_norm: 1.9365,
+                         init_bias: -2.0,
+                     },
+                    ],
+                nvis: 100,
+                },
+                pretrained: "./pretrain.pkl",
+            }
+        },
+        discriminator:
+            !obj:pylearn2.models.mlp.MLP {
+            layers: [
+                     !obj:pylearn2.models.maxout.Maxout {
+                         #W_lr_scale: .1,
+                         #b_lr_scale: .1,
+                         layer_name: 'h0',
+                         num_units: 1200,
+                         num_pieces: 5,
+                         irange: .005,
+                         max_col_norm: 1.9365,
+                     },
+                     !obj:pylearn2.models.maxout.Maxout {
+                         #W_lr_scale: .1,
+                         #b_lr_scale: .1,
+                         layer_name: 'h1',
+                         num_units: 1200,
+                         num_pieces: 5,
+                         irange: .005,
+                         max_col_norm: 1.9365,
+                     },
+                     !obj:pylearn2.models.mlp.Sigmoid {
+                         #W_lr_scale: .1,
+                         #b_lr_scale: .1,
+                         max_col_norm: 1.9365,
+                         layer_name: 'y',
+                         dim: 1,
+                         irange: .005
+                     }
+                    ],
+            nvis: 2304,
+        },
+    },
+    algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
+        batch_size: 100,
+        learning_rate: .05,
+        learning_rule: !obj:pylearn2.training_algorithms.learning_rule.Momentum {
+            init_momentum: .5,
+        },
+    monitoring_dataset:
+           {
+    #           'train' : *train,
+               'valid' : !obj:pylearn2.datasets.tfd.TFD {
+                             which_set: 'valid',
+                             scale: True,
+                         },
+    #           'test'  : !obj:pylearn2.datasets.tfd.TFD {
+    #                         which_set: 'test',
+    #                         scale: True,
+    #                     }
+           },
+        cost: !obj:adversarial.AdversaryCost2 {
+            scale_grads: 0,
+            #target_scale: 1.,
+            discriminator_default_input_include_prob: .5,
+            discriminator_input_include_probs: {
+                'h0': .8
+            },
+            discriminator_default_input_scale: 2.,
+            discriminator_input_scales: {
+                'h0': 1.25
+            }
+            },
+        #!obj:pylearn2.costs.mlp.dropout.Dropout {
+        #    input_include_probs: { 'h0' : .8 },
+        #    input_scales: { 'h0': 1. }
+        #},
+        update_callbacks: !obj:pylearn2.training_algorithms.sgd.ExponentialDecay {
+            decay_factor: 1.000004,
+            min_lr: .000001
+        }
+    },
+    extensions: [
+        !obj:pylearn2.training_algorithms.learning_rule.MomentumAdjustor {
+            start: 1,
+            saturate: 250,
+            final_momentum: .7
+        }
+    ],
+    save_path: "${PYLEARN2_TRAIN_FILE_FULL_STEM}.pkl",
+    save_freq: 1
+}
