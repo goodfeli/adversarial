@@ -3,10 +3,10 @@
         which_set: 'unlabeled',
         scale: True,
     },
-    model: !obj:galatea.adversarial.AdversaryPair {
-        generator: !obj:galatea.adversarial.Generator {
+    model: !obj:adversarial.AdversaryPair {
+        generator: !obj:adversarial.Generator {
             monitor_ll: 1,
-            mlp: !obj:galatea.adversarial.add_layers {
+            mlp: !obj:adversarial.add_layers {
                 mlp: !obj:pylearn2.models.mlp.MLP {
                     layers: [
                      !obj:pylearn2.models.mlp.RectifiedLinear {
@@ -79,7 +79,7 @@
     #                         scale: True,
     #                     }
            },
-        cost: !obj:galatea.adversarial.AdversaryCost2 {
+        cost: !obj:adversarial.AdversaryCost2 {
             scale_grads: 0,
             #target_scale: 1.,
             discriminator_default_input_include_prob: .5,
