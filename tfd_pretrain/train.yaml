@@ -95,6 +95,9 @@
         #    input_include_probs: { 'h0' : .8 },
         #    input_scales: { 'h0': 1. }
         #},
+        termination_criterion: !obj:pylearn2.termination_criteria.EpochCounter {
+            max_epochs: 22
+        },
         update_callbacks: !obj:pylearn2.training_algorithms.sgd.ExponentialDecay {
             decay_factor: 1.000004,
             min_lr: .000001
@@ -105,7 +108,13 @@
             start: 1,
             saturate: 250,
             final_momentum: .7
-        }
+        },
+        #!obj:pylearn2.train_extensions.best_params.MonitorBasedSaveBest {
+        #    channel_name: 'valid_gen_ll',
+        #    name_base: 'save/train',
+        #    store_best_model: True
+        #}
+
     ],
     save_path: "${PYLEARN2_TRAIN_FILE_FULL_STEM}.pkl",
     save_freq: 1
