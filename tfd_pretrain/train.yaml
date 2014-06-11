@@ -3,10 +3,10 @@
         which_set: 'unlabeled',
         scale: True,
     },
-    model: !obj:adversarial.AdversaryPair {
-        generator: !obj:adversarial.Generator {
+    model: !obj:galatea.adversarial.AdversaryPair {
+        generator: !obj:galatea.adversarial.Generator {
             monitor_ll: 1,
-            mlp: !obj:adversarial.add_layers {
+            mlp: !obj:galatea.adversarial.add_layers {
                 mlp: !obj:pylearn2.models.mlp.MLP {
                     layers: [
                      !obj:pylearn2.models.mlp.RectifiedLinear {
@@ -79,7 +79,7 @@
     #                         scale: True,
     #                     }
            },
-        cost: !obj:adversarial.AdversaryCost2 {
+        cost: !obj:galatea.adversarial.AdversaryCost2 {
             scale_grads: 0,
             #target_scale: 1.,
             discriminator_default_input_include_prob: .5,
@@ -95,6 +95,9 @@
         #    input_include_probs: { 'h0' : .8 },
         #    input_scales: { 'h0': 1. }
         #},
+        termination_criterion: !obj:pylearn2.termination_criteria.EpochCounter {
+            max_epochs: 22
+        },
         update_callbacks: !obj:pylearn2.training_algorithms.sgd.ExponentialDecay {
             decay_factor: 1.000004,
             min_lr: .000001
@@ -105,7 +108,13 @@
             start: 1,
             saturate: 250,
             final_momentum: .7
-        }
+        },
+        #!obj:pylearn2.train_extensions.best_params.MonitorBasedSaveBest {
+        #    channel_name: 'valid_gen_ll',
+        #    name_base: 'save/train',
+        #    store_best_model: True
+        #}
+
     ],
     save_path: "${PYLEARN2_TRAIN_FILE_FULL_STEM}.pkl",
     save_freq: 1
