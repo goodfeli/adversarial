@@ -6,6 +6,7 @@
     },
     model: !obj:adversarial.AdversaryPair {
         generator: !obj:adversarial.Generator {
+            noise: 'uniform',
             monitor_ll: 1,
             mlp: !obj:pylearn2.models.mlp.MLP {
             layers: [
@@ -60,15 +61,11 @@
         },
         monitoring_dataset:
             {
-                'train' : *train,
                 'valid' : !obj:pylearn2.datasets.mnist.MNIST {
                               which_set: 'train',
                               start: 50000,
                               stop:  60000
                           },
-                'test'  : !obj:pylearn2.datasets.mnist.MNIST {
-                              which_set: 'test',
-                          }
             },
         cost: !obj:adversarial.AdversaryCost2 {
             scale_grads: 0,
