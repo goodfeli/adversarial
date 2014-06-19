@@ -455,12 +455,14 @@ class SGD(TrainingAlgorithm):
         for batch in iterator:
             for callback in on_load_batch:
                 callback(*batch)
+            self.d_func(*batch)
+            i += 1
             if i == self.discriminator_steps:
+                # Generator doesn't actually use the data so we want to
+                # re-use this batch. Could save memory by making the
+                # code not expect data in the interface.
                 self.g_func(*batch)
                 i = 0
-            else:
-                self.d_func(*batch)
-                i += 1
             # iterator might return a smaller batch if dataset size
             # isn't divisible by batch_size
             # Note: if data_specs[0] is a NullSpace, there is no way to know
