@@ -18,20 +18,16 @@ m = dataset.X.shape[0]
 accumulator = sharedX(np.zeros((m,)))
 z_samples = g.get_noise(1)
 x_samples = g.mlp.fprop(z_samples)
-# x_samples = X
 from theano.compat import OrderedDict
 updates = OrderedDict()
 from theano import shared
 num_samples = shared(1)
 sigma = sharedX(float(sigma))
 prev = accumulator
-from theano.printing import Print
-#prev = Print('prev',attrs=['min','max'])(prev)
 cur = -0.5 * T.sqr(X - x_samples).sum(axis=1) / T.sqr(sigma)
-#cur = Print('cur',attrs=['min','max'])(cur)
 ofs = T.maximum(prev, cur)
 num_samples_f = T.cast(num_samples, 'float32')
-updates[accumulator] = ofs + T.log((num_samples_f * T.exp(prev - ofs) + T.exp(cur - ofs)) / (num_samples_f + 1.))
+updates[accumulator] = ofs + T.log(num_samples_f * T.exp(prev - ofs) + T.exp(cur - ofs)) - T.log(num_samples_f + 1.)
 updates[num_samples] = num_samples + 1
 f = function([], updates=updates)
 updates[accumulator] = cur
@@ -72,3 +68,4 @@ while True:
 # = log (1/m) [exp(v_m- ofs) exp(ofs) + (m-1) exp( prev -ofs) exp(ofs)]
 # = log exp(ofs) (1/m) [exp(v_m- ofs) + (m-1) exp( prev -ofs) ]
 # = ofs + log  (1/m) [exp(v_m- ofs) + (m-1) exp( prev -ofs) ]
+# = ofs + log  [exp(v_m- ofs) + (m-1) exp( prev -ofs) ] - log m

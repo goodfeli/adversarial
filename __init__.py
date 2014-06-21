@@ -139,6 +139,8 @@ class Generator(Model):
         del self.self
         self.theano_rng = MRG_RandomStreams(2014 * 5 + 27)
 
+    def get_input_space(self):
+        return self.mlp.get_input_space()
 
     def sample_and_noise(self, num_samples, default_input_include_prob=1., default_input_scale=1., all_g_layers=False):
         n = self.mlp.get_input_space().get_total_dimension()
@@ -196,6 +198,10 @@ class Generator(Model):
 
     def get_noise(self, size):
 
+        # Allow just requesting batch size
+        if isinstance(size, int):
+            size = (size, self.get_input_space().get_total_dimension())
+
         if not hasattr(self, 'noise'):
             self.noise = "gaussian"
         if self.noise == "uniform":
@@ -207,8 +213,7 @@ class Generator(Model):
             noise = noise / T.maximum(1e-7, T.sqrt(T.sqr(noise).sum(axis=1))).dimshuffle(0, 'x')
             return noise
         else:
-            raise NotImplementedError("noise should be gaussian or uniform")
-
+            raise NotImplementedError(self.noise)
 
     def get_params(self):
         return self.mlp.get_params()
