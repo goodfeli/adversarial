@@ -17,6 +17,7 @@ X = sharedX(dataset.X)
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 theano_rng = MRG_RandomStreams(2014 + 6 * 24)
 f = function([], updates=[(X, theano_rng.binomial(p=X, size=X.shape, dtype=X.dtype))])
+f()
 m = dataset.X.shape[0]
 accumulator = sharedX(np.zeros((m,)))
 z_samples = g.get_noise(1)
