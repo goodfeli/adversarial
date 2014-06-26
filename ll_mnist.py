@@ -16,6 +16,8 @@ n = g.get_input_space().get_total_dimension()
 X = sharedX(dataset.X)
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 theano_rng = MRG_RandomStreams(2014 + 6 * 24)
+assert False # Aaron says to do valid comparison we need to download the standard binarization,
+# and the model should also have been trained on the standard binarization
 f = function([], updates=[(X, theano_rng.binomial(p=X, size=X.shape, dtype=X.dtype))])
 f()
 m = dataset.X.shape[0]
