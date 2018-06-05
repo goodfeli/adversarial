@@ -150,7 +150,7 @@ def main():
     if args.valid:
         valid = get_valid(args.dataset)
         ll = get_nll(valid, parzen, batch_size = batch_size)
-        se = ll.std() / numpy.sqrt(val.shape[0])
+        se = ll.std() / numpy.sqrt(valid.shape[0])
         print "Log-Likelihood of valid set = {}, se: {}".format(ll.mean(), se)
 
 
